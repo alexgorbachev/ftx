@@ -31,7 +31,8 @@ class FtxClient:
 
     def _request(self, method: str, path: str, **kwargs) -> Any:
         request = Request(method, self._ENDPOINT + path, **kwargs)
-        self._sign_request(request)
+        if self._api_key is not None:
+            self._sign_request(request)
         response = self._session.send(request.prepare())
         return self._process_response(response)
 
