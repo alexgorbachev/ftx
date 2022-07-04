@@ -4,8 +4,11 @@ from typing import Optional, Dict, Any, List
 
 from requests import Request, Session, Response
 import hmac
-from ciso8601 import parse_datetime
-
+try:
+    from ciso8601 import parse_datetime
+except ModuleNotFoundError:
+    print("Module ciso8601 not installed - fallback to dateutil.parser")
+    from dateutil.parser import isoparse as parse_datetime
 
 
 class FtxClient:
