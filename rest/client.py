@@ -220,11 +220,8 @@ class FtxClient:
     def get_position(self, name: str, show_avg_price: bool = False) -> dict:
         return next(filter(lambda x: x['future'] == name, self.get_positions(show_avg_price)), None)
 
-    def get_all_trades(self, market: str, start_time: float = None, end_time: float = None, batch_size: int = 100) -> List:
+    def get_all_trades(self, market: str, start_time: float = None, end_time: float = None) -> List:
         ids = set()
-        # Max limit size is 5000 so if specified more - reduce.
-        # Otherwise, the exit condition won't work.
-        limit = min(batch_size, 5000)
         results = []
         while True:
             response = self._get(f'markets/{market}/trades', {
@@ -234,11 +231,15 @@ class FtxClient:
             deduped_trades = [r for r in response if r['id'] not in ids]
             results.extend(deduped_trades)
             ids |= {r['id'] for r in deduped_trades}
-            print(f'Adding {len(response)} trades with end time {end_time}')
+            print(f'Fetched {len(response)} and adding {len(deduped_trades)} deduped trades with end time {end_time}')
             if len(response) == 0:
                 break
             end_time = min(parse_datetime(t['time']) for t in response).timestamp()
-            if len(response) < limit:
+            # We get a batch of 5000 trades as a limit but this could change.
+            # Without hardcoding this and checking if responsevis below 5000,
+            # we just do one more roundtrip and last timestamp's trades are all deduped
+            # the previous limit 100 logic was flawn - there are timestsmpe that have more than 100 trades at the same exact time 
+            if len(deduped_trades) == 0:
                 break
         return results
 
